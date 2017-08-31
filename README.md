@@ -9,7 +9,6 @@ The game starts automatically upon page load. Click the cards to reveal them. Th
 cards two at a time to match the pairs. The game ends when all pairs are revealed.
 
 ### Scoring
-3 stars = 11 moves or less  
-2 stars = 15 moves or less  
-1 star = 19 moves or less  
-0 stars = 20 moves or above
+3 stars = 14 moves or less  
+2 stars = 19 moves or less  
+1 star = 20 moves or more

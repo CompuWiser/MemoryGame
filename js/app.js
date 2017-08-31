@@ -30,19 +30,52 @@ var open = [];
 var matched = 0;
 var moveCounter = 0;
 var numStars = 3;
-var timeStart = new Date().getTime();
-var timeEnd = 0;
+var timer = {
+    seconds: 0,
+    minutes: 0,
+    clearTime: -1
+};
 
 // Difficulty settings (max number of moves for each star)
-var hard = 12;
-var medium = 16;
-var easy = 20;
+var hard = 15;
+var medium = 20;
 
 var modal = $("#win-modal");
 
 /*
  * Support functions used by main event callback functions.
  */
+
+// Interval function to be called every second, increments timer and updates HTML
+var startTimer = function() {
+    if (timer.seconds === 59) {
+        timer.minutes++;
+        timer.seconds = 0;
+    } else {
+        timer.seconds++;
+    }
+
+    // Ensure that single digit seconds are preceded with a 0
+    var formattedSec = "0";
+    if (timer.seconds < 10) {
+        formattedSec += timer.seconds
+    } else {
+        formattedSec = String(timer.seconds);
+    }
+
+    var time = String(timer.minutes) + ":" + formattedSec;
+    $(".timer").text(time);
+};
+
+// Resets timer state and restarts timer
+function resetTimer() {
+    clearInterval(timer.clearTime);
+    timer.seconds = 0;
+    timer.minutes = 0;
+    $(".timer").text("0:00");
+
+    timer.clearTime = setInterval(startTimer, 1000);
+};
 
 // Randomizes cards on board and updates card HTML
 function updateCards() {
@@ -52,6 +85,7 @@ function updateCards() {
       $(this).attr("class", "fa " + deck[index]);
       index++;
     });
+    resetTimer();
 };
 
 // Toggles win modal on
@@ -77,17 +111,9 @@ function resetStars() {
 function updateMoveCounter() {
     $(".moves").text(moveCounter);
 
-    switch(moveCounter) {
-        case hard:
-            removeStar();
-            break;
-        case medium:
-            removeStar();
-            break;
-        case easy:
-            removeStar();
-            break;
-    };
+    if (moveCounter === hard || moveCounter === medium) {
+        removeStar();
+    }
 };
 
 // Checks if card is a valid move (if it not currently matched or open)
@@ -122,9 +148,7 @@ var setMatch = function() {
     matched += 2;
 
     if (hasWon()) {
-        timeEnd = new Date().getTime();
-        var overallTime = Math.floor((timeEnd - timeStart)/1000);
-        $(".time").text(String(overallTime));
+        clearInterval(timer.clearTime);
         showModal();
     }
 };
@@ -156,7 +180,7 @@ var resetGame = function() {
     open = [];
     matched = 0;
     moveCounter = 0;
-    timeStart = new Date().getTime();
+    resetTimer();
     updateMoveCounter();
     $(".card").attr("class", "card");
     updateCards();
@@ -201,4 +225,4 @@ $(".restart").click(resetGame);
 $(".play-again").click(playAgain);
 
 // Provides a randomized game board on page load
-$(updateCards); 
+$(updateCards);
