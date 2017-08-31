@@ -25,7 +25,28 @@ var deck = ["fa-diamond", "fa-diamond", "fa-paper-plane-o", "fa-paper-plane-o", 
            "fa-bolt", "fa-bolt", "fa-cube", "fa-cube", "fa-leaf", "fa-leaf",
            "fa-bicycle", "fa-bicycle", "fa-bomb", "fa-bomb"];
 
-function updateCards(deck) {
+// Game state variables
+var open = [];
+var matched = 0;
+var moveCounter = 0;
+var numStars = 3;
+var timeStart = new Date().getTime();
+var timeEnd = 0;
+
+// Difficulty settings (max number of moves for each star)
+var hard = 12;
+var medium = 16;
+var easy = 20;
+
+var modal = $("#win-modal");
+
+/*
+ * Support functions used by main event callback functions.
+ */
+
+// Randomizes cards on board and updates card HTML
+function updateCards() {
+    deck = shuffle(deck);
     var index = 0;
     $.each($(".card i"), function(){
       $(this).attr("class", "fa " + deck[index]);
@@ -33,24 +54,48 @@ function updateCards(deck) {
     });
 };
 
-function displayCards() {
-    deck = shuffle(deck);
-    updateCards(deck);
+// Toggles win modal on
+function showModal() {
+    modal.css("display", "block");
 };
 
-/*
- * set up the event listener for a card. If a card is clicked:
- *  - display the card's symbol (put this functionality in another function that you call from this one)
- *  - add the card to a *list* of "open" cards (put this functionality in another function that you call from this one)
- *  - if the list already has another card, check to see if the two cards match
- *    + if the cards do match, lock the cards in the open position (put this functionality in another function that you call from this one)
- *    + if the cards do not match, remove the cards from the list and hide the card's symbol (put this functionality in another function that you call from this one)
- *    + increment the move counter and display it on the page (put this functionality in another function that you call from this one)
- *    + if all cards have matched, display a message with the final score (put this functionality in another function that you call from this one)
- */
+// Removes last start from remaining stars, updates modal HTML
+function removeStar() {
+    $(".fa-star").last().attr("class", "fa fa-star-o");
+    numStars--;
+    $(".num-stars").text(String(numStars));
+};
 
-var open = [];
+// Restores star icons to 3 stars, updates modal HTML
+function resetStars() {
+    $(".fa-star-o").attr("class", "fa fa-star");
+    numStars = 3;
+    $(".num-stars").text(String(numStars));
+};
 
+// Updates number of moves in the HTML, removes star is necessary based on difficulty variables
+function updateMoveCounter() {
+    $(".moves").text(moveCounter);
+
+    switch(moveCounter) {
+        case hard:
+            removeStar();
+            break;
+        case medium:
+            removeStar();
+            break;
+        case easy:
+            removeStar();
+            break;
+    };
+};
+
+// Checks if card is a valid move (if it not currently matched or open)
+function isValid(card) {
+    return !(card.hasClass("open") || card.hasClass("match"));
+};
+
+// Returns whether or not currently open cards match
 function checkMatch() {
     if (open[0].children().attr("class")===open[1].children().attr("class")) {
         return true;
@@ -59,12 +104,41 @@ function checkMatch() {
     }
 };
 
-function setMatch() {
-    open.forEach(function() {
-
-    });
+// Returns win condition
+function hasWon() {
+    if (matched === 16) {
+        return true;
+    } else {
+        return false;
+    }
 };
 
+// Sets currently open cards to the match state, checks win condition
+var setMatch = function() {
+    open.forEach(function(card) {
+        card.addClass("match");
+    });
+    open = [];
+    matched += 2;
+
+    if (hasWon()) {
+        timeEnd = new Date().getTime();
+        var overallTime = Math.floor((timeEnd - timeStart)/1000);
+        $(".time").text(String(overallTime));
+        showModal();
+    }
+};
+
+// Sets currently open cards back to default state
+var resetOpen = function() {
+    open.forEach(function(card) {
+        card.toggleClass("open");
+        card.toggleClass("show");
+    });
+    open = [];
+};
+
+// Sets selected card to the open and shown state
 function openCard(card) {
     if (!card.hasClass("open")) {
         card.addClass("open");
@@ -73,22 +147,58 @@ function openCard(card) {
     }
 };
 
-var onClick = function(card) {
-    if (open.length === 0) {
-        openCard($(this));
-    } else if (open.length === 1) {
-        openCard($(this));
-        if (checkMatch()) {
-            console.log("It's a match!");
-            setMatch();
-            open = [];
-        } else {
-            console.log("Not a match!");
-            open = [];
-        }
-    }
+/*
+ * Event callback functions
+ */
 
-
+// Resets all game state variables and resets all required HTML to default state
+var resetGame = function() {
+    open = [];
+    matched = 0;
+    moveCounter = 0;
+    timeStart = new Date().getTime();
+    updateMoveCounter();
+    $(".card").attr("class", "card");
+    updateCards();
+    resetStars();
 };
 
+// Handles primary game logic of game
+var onClick = function() {
+    if (isValid( $(this) )) {
+
+        if (open.length === 0) {
+            openCard( $(this) );
+
+        } else if (open.length === 1) {
+            openCard( $(this) );
+            moveCounter++;
+            updateMoveCounter();
+
+            if (checkMatch()) {
+                setTimeout(setMatch, 300);
+
+            } else {
+                setTimeout(resetOpen, 700);
+
+            }
+        }
+    }
+};
+
+// Resets game state and toggles win modal display off
+var playAgain = function() {
+    resetGame();
+    modal.css("display", "none");
+};
+
+/*
+ * Initalize event listeners
+ */
+
 $(".card").click(onClick);
+$(".restart").click(resetGame);
+$(".play-again").click(playAgain);
+
+// Provides a randomized game board on page load
+$(updateCards); 
